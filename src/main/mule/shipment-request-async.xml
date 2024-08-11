@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-asyncapi="http://www.mulesoft.org/schema/mule/apikit-asyncapi" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/apikit-asyncapi http://www.mulesoft.org/schema/mule/apikit-asyncapi/current/mule-apikit-asyncapi.xsd http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+  <flow name="LISTEN:publish-shipment-request">
+    <apikit-asyncapi:message-listener config-ref="asyncapi-config" channelName="shipment-queue" doc:name="shipment_queue">
+      <apikit-asyncapi:servers>
+        <apikit-asyncapi:server value="dev" />
+      </apikit-asyncapi:servers>
+    </apikit-asyncapi:message-listener>
+    <logger level="INFO" message="#[payload]" />
+  </flow>
+	<flow name="shipment-request-asyncFlow" doc:id="4bfe8d36-5aca-424c-aa50-363839a7f6c0" >
+		<scheduler doc:name="Scheduler" doc:id="0d42744d-ffeb-4bcc-8c33-5f97d07509fd" >
+			<scheduling-strategy >
+				<fixed-frequency timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="event" doc:id="76b96d02-8e0b-475b-b91e-2db8039ebf72" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "shipment_id": uuid(),
+  "paymentConfiguration": [
+    "Check"
+  ],
+  "products": [
+    {
+      "name": "Product Name",
+      "quantity": 1
+    }
+  ],
+  "address": {
+    "street": "645 Hulet Dr",
+    "city": "Bloomfield Hills",
+    "state": "MI"
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<apikit-asyncapi:publish channelName="shipment-queue" serverName="dev" doc:name="Publish" doc:id="b0c59d03-c403-41f1-9b7c-0ced33b88eda" config-ref="asyncapi-config"/>
+	</flow>
+</mule>
